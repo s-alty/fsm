@@ -1,3 +1,4 @@
+import itertools
 # TODO: could this be done with a generator instead of a class?
 # What about a closure ?
 
@@ -11,10 +12,11 @@ class FSM:
         self.transition = transition # a function from state, input to state
         self.current_state = self.start_state
 
-    def reset(self):
+    def reinit(self):
         self.current_state = self.start_state
 
-    def evaluate_one_symbol(self, symbol):
+    def send(self, symbol):
+        # evaluates one symbol
         if symbol not in self.alphabet:
                 raise ValueError('Received invalid input symbol: {}, Alphabet is {}'.format(symbol, self.alphabet))
         self.current_state = self.transition(self.current_state, symbol)
@@ -22,11 +24,16 @@ class FSM:
 
     def evaluate(self, inputs):
         ''' Run a series of inputs through the state machine, return whether or not the end state is one of the valid final states'''
-        self.reset()
+        self.reinit()
         for symbol in inputs:
-            self.evaluate_one_symbol(symbol)
+            self.send(symbol)
         return self.current_state in self.final_states
 
     def language(self):
         '''return infinite iterator of all accepted inputs'''
-        pass
+        def inputs_of_length_n(n):
+            return itertools.product(self.alphabet, repeat=n)
+
+        inputs_of_all_lengths = map(inputs_of_length_n, itertools.count())
+        flattened = itertools.chain.from_iterable(inputs_of_all_lengths)
+        return (inputs for inputs in flattened if self.evaluate(inputs))
